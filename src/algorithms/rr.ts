@@ -48,7 +48,6 @@ export const rr = (
     unfinishedJobs.length > 0
   ) {
     if (readyQueue.length === 0 && unfinishedJobs.length > 0) {
-      // Previously idle
       readyQueue.push(unfinishedJobs[0]);
       currentTime = readyQueue[0].at;
     }
@@ -56,7 +55,6 @@ export const rr = (
     const processToExecute = readyQueue[0];
 
     if (remainingTime[processToExecute.job] <= timeQuantum) {
-      // Burst time less than or equal to time quantum, execute until finished
       const remainingT = remainingTime[processToExecute.job];
       remainingTime[processToExecute.job] -= remainingT;
       const prevCurrentTime = currentTime;
@@ -87,13 +85,10 @@ export const rr = (
       );
     });
 
-    // Push new processes to readyQueue
     readyQueue.push(...processToArriveInThisCycle);
 
-    // Requeueing (move head/first item to tail/last)
     readyQueue.push(readyQueue.shift());
 
-    // When the process finished executing
     if (remainingTime[processToExecute.job] === 0) {
       const indexToRemoveUJ = unfinishedJobs.indexOf(processToExecute);
       if (indexToRemoveUJ > -1) {
@@ -113,7 +108,6 @@ export const rr = (
     }
   }
 
-  // Sort the processes arrival time and then by job name
   solvedProcessesInfo.sort((obj1, obj2) => {
     if (obj1.at > obj2.at) return 1;
     if (obj1.at < obj2.at) return -1;
@@ -121,6 +115,13 @@ export const rr = (
     if (obj1.job < obj2.job) return -1;
     return 0;
   });
+  const totalTAT = solvedProcessesInfo.reduce((sum, p) => sum + p.tat, 0);
+    const totalWAT = solvedProcessesInfo.reduce((sum, p) => sum + p.wat, 0);
+  const avgTurnAroundTime =
+    solvedProcessesInfo.length > 0 ? totalTAT / solvedProcessesInfo.length : 0;
+  const avgWaitingTime =
+    solvedProcessesInfo.length > 0 ? totalWAT / solvedProcessesInfo.length : 0;
 
-  return { solvedProcessesInfo, ganttChartInfo };
+return { solvedProcessesInfo, ganttChartInfo, avgTurnAroundTime, avgWaitingTime };
+
 };

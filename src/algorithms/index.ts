@@ -28,20 +28,32 @@ export const solve = (
   timeQuantum: number,
   priorities: number[]
 ) => {
+  let result;
+
   switch (algo) {
     case 'FCFS':
-      return fcfs(arrivalTime, burstTime);
-    case 'SJF':
-      return sjf(arrivalTime, burstTime);
-    case 'SRTF':
-      return srtf(arrivalTime, burstTime);
-    case 'RR':
-      return rr(arrivalTime, burstTime, timeQuantum);
-    case 'NPP':
-      return npp(arrivalTime, burstTime, priorities);
-    case 'PP':
-      return pp(arrivalTime, burstTime, priorities);
-    default:
+      result = fcfs(arrivalTime, burstTime);
       break;
+    case 'SJF':
+      result = sjf(arrivalTime, burstTime);
+      break;
+    case 'SRTF':
+      result = srtf(arrivalTime, burstTime);
+      break;
+    case 'RR':
+      result = rr(arrivalTime, burstTime, timeQuantum);
+      break;
+    case 'NPP':
+      result = npp(arrivalTime, burstTime, priorities);
+      break;
+    case 'PP':
+      result = pp(arrivalTime, burstTime, priorities);
+      break;
+    default:
+      result = { solvedProcessesInfo: [], ganttChartInfo: [], avgWaitingTime: 0, avgTurnAroundTime: 0 };
   }
+
+  const { solvedProcessesInfo, ganttChartInfo, avgWaitingTime, avgTurnAroundTime } = result;
+
+  return { solvedProcessesInfo, ganttChartInfo, avgWaitingTime, avgTurnAroundTime };
 };

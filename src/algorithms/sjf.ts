@@ -131,7 +131,6 @@ export const sjf = (arrivalTime: number[], burstTime: number[]) => {
     }
   }
 
-  // Sort the processes by job name within arrival time
   solvedProcessesInfo.sort((obj1, obj2) => {
     if (obj1.at > obj2.at) return 1;
     if (obj1.at < obj2.at) return -1;
@@ -139,6 +138,12 @@ export const sjf = (arrivalTime: number[], burstTime: number[]) => {
     if (obj1.job < obj2.job) return -1;
     return 0;
   });
+  const totalTAT = solvedProcessesInfo.reduce((sum, p) => sum + p.tat, 0);
+    const totalWAT = solvedProcessesInfo.reduce((sum, p) => sum + p.wat, 0);
+  const avgTurnAroundTime =
+    solvedProcessesInfo.length > 0 ? totalTAT / solvedProcessesInfo.length : 0;
+  const avgWaitingTime =
+    solvedProcessesInfo.length > 0 ? totalWAT / solvedProcessesInfo.length : 0;
 
-  return { solvedProcessesInfo, ganttChartInfo };
+  return { solvedProcessesInfo, ganttChartInfo, avgTurnAroundTime, avgWaitingTime };
 };

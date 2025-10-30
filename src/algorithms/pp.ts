@@ -185,6 +185,13 @@ export const pp = (
     if (process1.job < process2.job) return -1;
     return 0;
   });
+  const totalTAT = solvedProcessesInfo.reduce((sum, p) => sum + p.tat, 0);
+  const totalWAT = solvedProcessesInfo.reduce((sum, p) => sum + p.wat, 0);
+  const avgTurnAroundTime =
+    solvedProcessesInfo.length > 0 ? totalTAT / solvedProcessesInfo.length : 0;
+  const avgWaitingTime =
+    solvedProcessesInfo.length > 0 ? totalWAT / solvedProcessesInfo.length : 0;
 
-  return { solvedProcessesInfo, ganttChartInfo };
+return { solvedProcessesInfo, ganttChartInfo, avgTurnAroundTime, avgWaitingTime };
+
 };

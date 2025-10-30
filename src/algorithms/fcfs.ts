@@ -15,12 +15,8 @@ export const fcfs = (arrivalTime: number[], burstTime: number[]) => {
       };
     })
     .sort((obj1, obj2) => {
-      if (obj1.at > obj2.at) {
-        return 1;
-      }
-      if (obj1.at < obj2.at) {
-        return -1;
-      }
+      if (obj1.at > obj2.at) return 1;
+      if (obj1.at < obj2.at) return -1;
       return 0;
     });
 
@@ -30,7 +26,6 @@ export const fcfs = (arrivalTime: number[], burstTime: number[]) => {
   const solvedProcessesInfo = processesInfo.map((process, index) => {
     if (index === 0 || process.at > finishTime[index - 1]) {
       finishTime[index] = process.at + process.bt;
-
       ganttChartInfo.push({
         job: process.job,
         start: process.at,
@@ -38,7 +33,6 @@ export const fcfs = (arrivalTime: number[], burstTime: number[]) => {
       });
     } else {
       finishTime[index] = finishTime[index - 1] + process.bt;
-
       ganttChartInfo.push({
         job: process.job,
         start: finishTime[index - 1],
@@ -54,5 +48,15 @@ export const fcfs = (arrivalTime: number[], burstTime: number[]) => {
     };
   });
 
-  return { solvedProcessesInfo, ganttChartInfo };
+  const n = solvedProcessesInfo.length;
+  const avgWaitingTime =
+    n > 0
+      ? solvedProcessesInfo.reduce((sum, p) => sum + p.wat, 0) / n
+      : 0;
+  const avgTurnAroundTime =
+    n > 0
+      ? solvedProcessesInfo.reduce((sum, p) => sum + p.tat, 0) / n
+      : 0;
+
+  return { solvedProcessesInfo, ganttChartInfo, avgWaitingTime, avgTurnAroundTime };
 };
