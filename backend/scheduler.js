@@ -147,7 +147,7 @@ function analyzeScheduling(processes, algorithm, quantum = 2) {
       result = { error: "Unknown algorithm" };
   }
 
-  console.log("✅ Result:", result);
+  console.log("Result:", result);
   if (result && typeof result === 'object') {
     if ('avgWT' in result) result.avgWaitingTime = result.avgWT;
     if ('avgTAT' in result) result.avgTurnAroundTime = result.avgTAT;

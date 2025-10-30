@@ -58,7 +58,6 @@ export const pp = (
     }
 
     readyQueue.sort((a, b) => {
-      // Equal-priority processes are scheduled in FCFS order.
       if (a.priority > b.priority) return 1;
       if (a.priority < b.priority) return -1;
       return 0;
@@ -114,7 +113,6 @@ export const pp = (
       );
     });
 
-    // Push new processes to readyQueue
     readyQueue.push(...processToArrive);
 
     if (!gotInterruption) {
@@ -154,10 +152,8 @@ export const pp = (
       }
     }
 
-    // Requeueing (move head/first item to tail/last)
     readyQueue.push(readyQueue.shift());
 
-    // When the process finished executing
     if (remainingTime[processToExecute.job] === 0) {
       const indexToRemoveUJ = unfinishedJobs.indexOf(processToExecute);
       if (indexToRemoveUJ > -1) {
@@ -177,7 +173,6 @@ export const pp = (
     }
   }
 
-  // Sort the processes by job name within arrival time
   solvedProcessesInfo.sort((process1, process2) => {
     if (process1.at > process2.at) return 1;
     if (process1.at < process2.at) return -1;

@@ -20,7 +20,6 @@ const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', ...
     if (ripple) ripple.remove();
     button.appendChild(circle);
 
-    // Trigger the original onClick if provided
     if (onClick) onClick(event);
   };
 

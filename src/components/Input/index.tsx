@@ -205,7 +205,6 @@ const Input = (props: InputProps) => {
     props.setPriorities(prioritiesArr);
   };
 
-  // 🔹 Analyze multiple algorithms
   const handleAnalyze = async () => {
     console.log("🔵 Analyze clicked");
 
@@ -252,12 +251,12 @@ const Input = (props: InputProps) => {
         );
 
         if (!response.ok) {
-          console.error(`❌ HTTP error for ${algo}:`, response.status);
+          console.error(`HTTP error for ${algo}:`, response.status);
           continue;
         }
 
         const data = await response.json();
-        console.log(`✅ Response for ${algo}:`, data);
+        console.log(`Response for ${algo}:`, data);
 
         allResults.push({
           algo,
@@ -265,11 +264,11 @@ const Input = (props: InputProps) => {
           avgTurnAroundTime: data.avgTurnAroundTime ?? NaN,
         });
       } catch (err) {
-        console.error(`💥 Error analyzing ${algo}:`, err);
+        console.error(`Error analyzing ${algo}:`, err);
       }
     }
 
-    console.log("📦 All results collected:", allResults);
+    console.log("All results collected:", allResults);
 
     if (allResults.length > 0) {
       let best = allResults[0];
@@ -281,11 +280,11 @@ const Input = (props: InputProps) => {
         if (currentScore < bestScore) best = res;
       }
 
-      console.log("🏆 Best algorithm found:", best);
+      console.log("Best algorithm found:", best);
       setResultsList(allResults);
       setRecommendation(best.algo);
     } else {
-      console.warn("⚠️ No valid results found!");
+      console.warn("No valid results found!");
       setResultsList([]);
       setRecommendation("No valid result found");
     }
@@ -350,7 +349,6 @@ const Input = (props: InputProps) => {
           </fieldset>
         )}
 
-        {/* 🔘 Solve and Analyze Buttons Side by Side */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
           <Button type="submit">Solve</Button>
           <Button type="button" onClick={handleAnalyze}>
@@ -359,7 +357,6 @@ const Input = (props: InputProps) => {
         </div>
       </Form>
 
-      {/* 🧾 Results Table */}
       {resultsList.length > 0 && (
         <Table>
           <thead>

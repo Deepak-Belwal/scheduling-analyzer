@@ -48,7 +48,6 @@ export const srtf = (arrivalTime: number[], burstTime: number[]) => {
     }
 
     readyQueue.sort((a, b) => {
-      // Equal-priority processes are scheduled in FCFS order.
       if (remainingTime[a.job] > remainingTime[b.job]) return 1;
       if (remainingTime[a.job] < remainingTime[b.job]) return -1;
       return 0;
@@ -106,7 +105,6 @@ export const srtf = (arrivalTime: number[], burstTime: number[]) => {
       );
     });
 
-    // Push new processes to readyQueue
     readyQueue.push(...processToArrive);
 
     if (!gotInterruption) {
@@ -146,10 +144,8 @@ export const srtf = (arrivalTime: number[], burstTime: number[]) => {
       }
     }
 
-    // Requeueing (move head/first item to tail/last)
     readyQueue.push(readyQueue.shift());
 
-    // When the process finished executing
     if (remainingTime[processToExecute.job] === 0) {
       const indexToRemoveUJ = unfinishedJobs.indexOf(processToExecute);
       if (indexToRemoveUJ > -1) {
@@ -169,7 +165,6 @@ export const srtf = (arrivalTime: number[], burstTime: number[]) => {
     }
   }
 
-  // Sort the processes by job name within arrival time
   solvedProcessesInfo.sort((obj1, obj2) => {
     if (obj1.at > obj2.at) return 1;
     if (obj1.at < obj2.at) return -1;

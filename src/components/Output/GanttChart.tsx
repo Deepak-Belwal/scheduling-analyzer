@@ -131,7 +131,6 @@ const GanttChart = ({ ganttChartInfo }: GanttChartProps) => {
     }
   }
 
-  // If index of last time item equal to acc
   let lastLineItemCount: number;
   if (time.length - 1 === acc) {
     lastLineItemCount = 0;

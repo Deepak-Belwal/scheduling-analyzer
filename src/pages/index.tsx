@@ -61,7 +61,6 @@ export default function Home() {
   const [timeQuantum, setTimeQuantum] = useState<number>();
   const [priorities, setPriorities] = useState<number[]>([]);
 
-  // 🆕 Add a state for storing history
   const [history, setHistory] = useState<
     { algorithm: string; avgWaitingTime: number; avgTurnAroundTime: number }[]
   >([]);
@@ -96,11 +95,10 @@ export default function Home() {
           burstTime={burstTime}
           timeQuantum={timeQuantum}
           priorities={priorities}
-          setHistory={setHistory} // <--- ADD THIS PROP
+          setHistory={setHistory}
         />
       </Main>
 
-      {/* 🆕 Render history below the output */}
       {history.length > 0 && (
         <div className="container" style={{ marginTop: '2rem' }}>
           <h3>Previous Runs</h3>
@@ -120,7 +118,6 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          {/* existing footer code */}
           GitHub
         </a>
       </Footer>
