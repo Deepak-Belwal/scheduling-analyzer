@@ -9,7 +9,6 @@ import styled from 'styled-components';
 import AlgoSelect, { OptionType, defaultOption } from './AlgoSelect';
 import Button from './Button';
 import { invalidInputSwal } from './swal';
-
 import { media } from '../GlobalStyle.css';
 
 const StyledInput = styled.div`
@@ -62,11 +61,6 @@ const Form = styled.form`
       background-color: #fff;
       outline: none;
     }
-
-    &:-webkit-autofill::first-line {
-      font-family: $body-font;
-      font-size: 14px;
-    }
   }
 
   button {
@@ -76,7 +70,6 @@ const Form = styled.form`
     width: 5.625rem;
     height: 2.5rem;
     transition: background-color 0.2s ease-out;
-
     position: relative;
     overflow: hidden;
 
@@ -101,6 +94,35 @@ const Form = styled.form`
   }
 `;
 
+const Table = styled.table`
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+
+  th {
+    background-color: #f7f9fc;
+    color: #333;
+  }
+
+  tr.best {
+    background-color: #e8f8ef;
+    font-weight: 600;
+    color: #0b8900;
+  }
+
+  tr:hover {
+    background-color: #f0f4ff;
+  }
+`;
+
 type InputProps = {
   selectedAlgo: OptionType;
   setSelectedAlgo: Dispatch<SetStateAction<{}>>;
@@ -116,8 +138,11 @@ const Input = (props: InputProps) => {
   const [burstTime, setBurstTime] = useState('');
   const [timeQuantum, setTimeQuantum] = useState('');
   const [priorities, setPriorities] = useState('');
-  const arrivalTimeRef = useRef(null);
-  const burstTimeRef = useRef(null);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [resultsList, setResultsList] = useState<any[]>([]);
+
+  const arrivalTimeRef = useRef<HTMLInputElement>(null);
+  const burstTimeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (arrivalTimeRef.current && burstTimeRef.current) {
@@ -147,13 +172,11 @@ const Input = (props: InputProps) => {
       invalidInputSwal('0 burst time is invalid');
       return;
     } else if (arrivalTimeArr.length !== burstTimeArr.length) {
-      invalidInputSwal(
-        'Number of the arrival times and burst times do not match'
-      );
+      invalidInputSwal('Number of arrival times and burst times do not match');
       return;
     } else if (
-      arrivalTimeArr.includes(NaN) ||
-      burstTimeArr.includes(NaN) ||
+      arrivalTimeArr.some(isNaN) ||
+      burstTimeArr.some(isNaN) ||
       (selectedAlgo.value === 'RR' && isNaN(timeQuantumInt))
     ) {
       invalidInputSwal('Please enter only integers');
@@ -169,13 +192,8 @@ const Input = (props: InputProps) => {
     if (selectedAlgo.value === 'NPP' || selectedAlgo.value === 'PP') {
       if (priorities.trim() === '') {
         prioritiesArr = arrivalTimeArr.map(() => 0);
-      } else if (
-        prioritiesArr.length !== arrivalTimeArr.length ||
-        prioritiesArr.length !== arrivalTimeArr.length
-      ) {
-        invalidInputSwal(
-          'Arrival times, burst times and priorities should have equal length'
-        );
+      } else if (prioritiesArr.length !== arrivalTimeArr.length) {
+        invalidInputSwal('Arrival, burst, and priorities must match in length');
         return;
       }
     }
@@ -187,21 +205,92 @@ const Input = (props: InputProps) => {
     props.setPriorities(prioritiesArr);
   };
 
-  const handleArrivalTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setArrivalTime(e.target.value);
+  // 🔹 Analyze multiple algorithms
+  const handleAnalyze = async () => {
+    console.log("🔵 Analyze clicked");
+
+    setRecommendation(null);
+    setResultsList([]);
+    let algorithms: string[] = [];
+
+    if (selectedAlgo.value === 'RR') algorithms = ['FCFS', 'SJF', 'SRTF', 'RR'];
+    else if (selectedAlgo.value === 'NPP' || selectedAlgo.value === 'PP')
+      algorithms = ['FCFS', 'SJF', 'SRTF', 'NPP', 'PP'];
+    else algorithms = ['FCFS', 'SJF', 'SRTF'];
+
+    console.log("📊 Algorithms to test:", algorithms);
+
+    const arrivalArr = arrivalTime.trim().split(/\s+/).map(Number);
+    const burstArr = burstTime.trim().split(/\s+/).map(Number);
+    const tq = parseInt(timeQuantum);
+
+    console.log("📥 Input data:", { arrivalArr, burstArr, tq });
+
+    if (arrivalArr.length !== burstArr.length) {
+      invalidInputSwal('Number of arrival and burst times must match');
+      return;
+    }
+
+    const allResults: any[] = [];
+
+    for (const algo of algorithms) {
+      try {
+        console.log(`🚀 Sending request to backend for ${algo}...`);
+        const response = await fetch(
+          `http://localhost:5000/analyze?algorithm=${algo}&quantum=${tq || 2}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              arrivalArr.map((at, i) => ({
+                arrivalTime: at,
+                burstTime: burstArr[i],
+                priority: 0,
+              }))
+            ),
+          }
+        );
+
+        if (!response.ok) {
+          console.error(`❌ HTTP error for ${algo}:`, response.status);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`✅ Response for ${algo}:`, data);
+
+        allResults.push({
+          algo,
+          avgWaitingTime: data.avgWaitingTime ?? NaN,
+          avgTurnAroundTime: data.avgTurnAroundTime ?? NaN,
+        });
+      } catch (err) {
+        console.error(`💥 Error analyzing ${algo}:`, err);
+      }
+    }
+
+    console.log("📦 All results collected:", allResults);
+
+    if (allResults.length > 0) {
+      let best = allResults[0];
+      for (const res of allResults) {
+        const currentScore =
+          (res.avgWaitingTime || 99999) + (res.avgTurnAroundTime || 99999);
+        const bestScore =
+          (best.avgWaitingTime || 99999) + (best.avgTurnAroundTime || 99999);
+        if (currentScore < bestScore) best = res;
+      }
+
+      console.log("🏆 Best algorithm found:", best);
+      setResultsList(allResults);
+      setRecommendation(best.algo);
+    } else {
+      console.warn("⚠️ No valid results found!");
+      setResultsList([]);
+      setRecommendation("No valid result found");
+    }
   };
 
-  const handleBurstTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBurstTime(e.target.value);
-  };
-
-  const handleTimeQuantumChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTimeQuantum(e.target.value);
-  };
-
-  const handlePrioritiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPriorities(e.target.value);
-  };
 
   return (
     <StyledInput>
@@ -217,7 +306,7 @@ const Input = (props: InputProps) => {
         <fieldset>
           <label htmlFor="arrival-time">Arrival Times</label>
           <input
-            onChange={handleArrivalTimeChange}
+            onChange={(e) => setArrivalTime(e.target.value)}
             type="text"
             id="arrival-time"
             placeholder="e.g. 0 2 4 6 8"
@@ -227,7 +316,7 @@ const Input = (props: InputProps) => {
         <fieldset>
           <label htmlFor="burst-time">Burst Times</label>
           <input
-            onChange={handleBurstTimeChange}
+            onChange={(e) => setBurstTime(e.target.value)}
             type="text"
             id="burst-time"
             placeholder="e.g. 2 4 6 8 10"
@@ -238,8 +327,8 @@ const Input = (props: InputProps) => {
           <fieldset>
             <label htmlFor="time-quantum">Time Quantum</label>
             <input
-              defaultValue={timeQuantum}
-              onChange={handleTimeQuantumChange}
+              value={timeQuantum}
+              onChange={(e) => setTimeQuantum(e.target.value)}
               type="number"
               id="time-quantum"
               placeholder="e.g. 3"
@@ -252,16 +341,56 @@ const Input = (props: InputProps) => {
           <fieldset>
             <label htmlFor="priorities">Priorities</label>
             <input
-              defaultValue={priorities}
-              onChange={handlePrioritiesChange}
+              value={priorities}
+              onChange={(e) => setPriorities(e.target.value)}
               type="text"
               id="priorities"
               placeholder="Lower # = higher priority"
             />
           </fieldset>
         )}
-        <Button>Solve</Button>
+
+        {/* 🔘 Solve and Analyze Buttons Side by Side */}
+        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+          <Button type="submit">Solve</Button>
+          <Button type="button" onClick={handleAnalyze}>
+            Analyze
+          </Button>
+        </div>
       </Form>
+
+      {/* 🧾 Results Table */}
+      {resultsList.length > 0 && (
+        <Table>
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Avg WT</th>
+              <th>Avg TAT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resultsList.map((res, idx) => (
+              <tr
+                key={idx}
+                className={res.algo === recommendation ? 'best' : ''}
+              >
+                <td>{res.algo}</td>
+                <td>
+                  {isNaN(res.avgWaitingTime)
+                    ? 'NaN'
+                    : res.avgWaitingTime.toFixed(2)}
+                </td>
+                <td>
+                  {isNaN(res.avgTurnAroundTime)
+                    ? 'NaN'
+                    : res.avgTurnAroundTime.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
     </StyledInput>
   );
 };

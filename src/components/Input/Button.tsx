@@ -1,7 +1,12 @@
-const Button = ({ children }) => {
+import React from 'react';
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children: React.ReactNode;
+};
+
+const Button: React.FC<ButtonProps> = ({ children, onClick, type = 'button', ...props }) => {
   const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
-
     const circle = document.createElement('span');
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
@@ -12,16 +17,15 @@ const Button = ({ children }) => {
     circle.classList.add('ripple');
 
     const ripple = button.getElementsByClassName('ripple')[0];
-
-    if (ripple) {
-      ripple.remove();
-    }
-
+    if (ripple) ripple.remove();
     button.appendChild(circle);
+
+    // Trigger the original onClick if provided
+    if (onClick) onClick(event);
   };
 
   return (
-    <button onClick={createRipple} type="submit">
+    <button onClick={createRipple} type={type} {...props}>
       {children}
     </button>
   );

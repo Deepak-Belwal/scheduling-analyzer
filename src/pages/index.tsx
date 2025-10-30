@@ -79,24 +79,6 @@ export default function Home() {
           property="og:description"
           content="Dynamically generates gantt chart and calculates TAT (turnaround time) and WAT (waiting time) based on various CPU scheduling algorithms."
         />
-        <meta
-          property="og:image"
-          content="https://boonsuen.com/process-scheduling-solver/meta.png"
-        />
-        <meta
-          property="og:url"
-          content="https://boonsuen.com/process-scheduling-solver"
-        />
-        <meta name="twitter:title" content="Process Scheduling Solver" />
-        <meta
-          name="twitter:description"
-          content="Dynamically generates gantt chart and calculates TAT (turnaround time) and WAT (waiting time) based on various CPU scheduling algorithms."
-        />
-        <meta
-          name="twitter:image"
-          content="https://boonsuen.com/process-scheduling-solver/meta.png"
-        />
-        <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
       <Main className="container">
@@ -108,7 +90,6 @@ export default function Home() {
           setTimeQuantum={setTimeQuantum}
           setPriorities={setPriorities}
         />
-        {/* 🆕 Pass setHistory to Output so it can update the history */}
         <Output
           selectedAlgo={selectedAlgo}
           arrivalTime={arrivalTime}
