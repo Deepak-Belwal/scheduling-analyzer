@@ -79,7 +79,7 @@ const AlgoSelect: React.FC<AlgoSelectProps> = ({
 }) => {
   return (
     <StyledSelect
-      defaultValue={selectedAlgo}
+      value={selectedAlgo}
       onChange={setSelectedAlgo}
       options={options}
       instanceId="react-select-algo"

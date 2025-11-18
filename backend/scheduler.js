@@ -158,5 +158,37 @@ function analyzeScheduling(processes, algorithm, quantum = 2) {
   return result;
 }
 
+function runAllAlgorithms(processes, quantum = 2) {
+  return {
+    FCFS: fcfs(processes),
+    SJF: sjf(processes),
+    SRTF: srtf(processes),
+    RR: rr(processes, quantum),
+    NPP: npp(processes),
+    PP: pp(processes)
+  };
+}
 
-export { analyzeScheduling };
+// scheduler.js (add this near the bottom)
+
+function buildFeaturesForModel(processes, quantum = 2) {
+  const algos = ["FCFS", "SJF", "SRTF", "RR", "NPP", "PP"];
+
+  const features = [];
+
+  for (const algo of algos) {
+    const result =
+      algo === "RR"
+        ? analyzeScheduling(processes, algo, quantum)
+        : analyzeScheduling(processes, algo);
+
+    const avgWT = result.avgWaitingTime ?? 0;
+    const avgTAT = result.avgTurnAroundTime ?? 0;
+
+    features.push(avgWT, avgTAT);
+  }
+
+  return { algos, features };
+}
+
+export { analyzeScheduling, buildFeaturesForModel, runAllAlgorithms };

@@ -64,6 +64,9 @@ const Form = styled.form`
   }
 
   button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background-color: #2684ff;
     border-radius: 5px;
     color: #fff;
@@ -75,21 +78,6 @@ const Form = styled.form`
 
     &:hover {
       background-color: #005bff;
-    }
-  }
-
-  span.ripple {
-    position: absolute;
-    border-radius: 50%;
-    transform: scale(0);
-    animation: ripple 600ms ease-out;
-    background-color: rgba(255, 255, 255, 0.7);
-  }
-
-  @keyframes ripple {
-    to {
-      transform: scale(4);
-      opacity: 0;
     }
   }
 `;
@@ -133,7 +121,11 @@ type InputProps = {
 };
 
 const Input = (props: InputProps) => {
-  const [selectedAlgo, setSelectedAlgo] = useState(defaultOption);
+  // Use the parent's selectedAlgo so programmatic updates (AI recommend)
+  // are immediately reflected in the UI. The parent passes these via props.
+  // (props.selectedAlgo may be null initially; fall back to defaultOption)
+  const selectedAlgo = (props.selectedAlgo as any) || defaultOption;
+  const setSelectedAlgo = props.setSelectedAlgo;
   const [arrivalTime, setArrivalTime] = useState('');
   const [burstTime, setBurstTime] = useState('');
   const [timeQuantum, setTimeQuantum] = useState('');
@@ -154,37 +146,31 @@ const Input = (props: InputProps) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const arrivalTimeArr = arrivalTime
-      .trim()
-      .split(/\s+/)
-      .map((at) => parseInt(at));
-    const burstTimeArr = burstTime
-      .trim()
-      .split(/\s+/)
-      .map((bt) => parseInt(bt));
+    const arrivalTimeArr = arrivalTime.trim().split(/\s+/).map(Number);
+    const burstTimeArr = burstTime.trim().split(/\s+/).map(Number);
     const timeQuantumInt = parseInt(timeQuantum);
-    let prioritiesArr = priorities
-      .trim()
-      .split(/\s+/)
-      .map((priority) => parseInt(priority));
+    let prioritiesArr = priorities.trim().split(/\s+/).map(Number);
 
     if (burstTimeArr.includes(0)) {
       invalidInputSwal('0 burst time is invalid');
       return;
-    } else if (arrivalTimeArr.length !== burstTimeArr.length) {
+    }
+
+    if (arrivalTimeArr.length !== burstTimeArr.length) {
       invalidInputSwal('Number of arrival times and burst times do not match');
       return;
-    } else if (
+    }
+
+    if (
       arrivalTimeArr.some(isNaN) ||
       burstTimeArr.some(isNaN) ||
       (selectedAlgo.value === 'RR' && isNaN(timeQuantumInt))
     ) {
       invalidInputSwal('Please enter only integers');
       return;
-    } else if (
-      arrivalTimeArr.some((t) => t < 0) ||
-      burstTimeArr.some((t) => t < 0)
-    ) {
+    }
+
+    if (arrivalTimeArr.some((t) => t < 0) || burstTimeArr.some((t) => t < 0)) {
       invalidInputSwal('Negative numbers are invalid');
       return;
     }
@@ -206,24 +192,21 @@ const Input = (props: InputProps) => {
   };
 
   const handleAnalyze = async () => {
-    console.log("🔵 Analyze clicked");
-
     setRecommendation(null);
     setResultsList([]);
+
     let algorithms: string[] = [];
 
-    if (selectedAlgo.value === 'RR') algorithms = ['FCFS', 'SJF', 'SRTF', 'RR'];
+    if (selectedAlgo.value === 'RR')
+      algorithms = ['FCFS', 'SJF', 'SRTF', 'RR'];
     else if (selectedAlgo.value === 'NPP' || selectedAlgo.value === 'PP')
       algorithms = ['FCFS', 'SJF', 'SRTF', 'NPP', 'PP'];
-    else algorithms = ['FCFS', 'SJF', 'SRTF'];
-
-    console.log("📊 Algorithms to test:", algorithms);
+    else
+      algorithms = ['FCFS', 'SJF', 'SRTF'];
 
     const arrivalArr = arrivalTime.trim().split(/\s+/).map(Number);
     const burstArr = burstTime.trim().split(/\s+/).map(Number);
     const tq = parseInt(timeQuantum);
-
-    console.log("📥 Input data:", { arrivalArr, burstArr, tq });
 
     if (arrivalArr.length !== burstArr.length) {
       invalidInputSwal('Number of arrival and burst times must match');
@@ -234,7 +217,6 @@ const Input = (props: InputProps) => {
 
     for (const algo of algorithms) {
       try {
-        console.log(`🚀 Sending request to backend for ${algo}...`);
         const response = await fetch(
           `http://localhost:5000/analyze?algorithm=${algo}&quantum=${tq || 2}`,
           {
@@ -250,13 +232,7 @@ const Input = (props: InputProps) => {
           }
         );
 
-        if (!response.ok) {
-          console.error(`HTTP error for ${algo}:`, response.status);
-          continue;
-        }
-
         const data = await response.json();
-        console.log(`Response for ${algo}:`, data);
 
         allResults.push({
           algo,
@@ -268,28 +244,114 @@ const Input = (props: InputProps) => {
       }
     }
 
-    console.log("All results collected:", allResults);
-
     if (allResults.length > 0) {
       let best = allResults[0];
       for (const res of allResults) {
-        const currentScore =
-          (res.avgWaitingTime || 99999) + (res.avgTurnAroundTime || 99999);
+        const score =
+          (res.avgWaitingTime || 99999) +
+          (res.avgTurnAroundTime || 99999);
+
         const bestScore =
-          (best.avgWaitingTime || 99999) + (best.avgTurnAroundTime || 99999);
-        if (currentScore < bestScore) best = res;
+          (best.avgWaitingTime || 99999) +
+          (best.avgTurnAroundTime || 99999);
+
+        if (score < bestScore) best = res;
       }
 
-      console.log("Best algorithm found:", best);
       setResultsList(allResults);
       setRecommendation(best.algo);
-    } else {
-      console.warn("No valid results found!");
-      setResultsList([]);
-      setRecommendation("No valid result found");
     }
   };
 
+  const handleAIRecommend = async () => {
+  console.log("🤖 AI Recommend clicked");
+
+  const arrivalArr = arrivalTime.trim().split(/\s+/).map(Number);
+  const burstArr = burstTime.trim().split(/\s+/).map(Number);
+  const tq = parseInt(timeQuantum) || 2;
+
+  if (arrivalArr.length !== burstArr.length) {
+    invalidInputSwal("Arrival and burst time count must match");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/recommend?quantum=${tq}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          arrivalArr.map((at, i) => ({
+            arrivalTime: at,
+            burstTime: burstArr[i],
+            priority: priorities[i] || 0,
+          }))
+        )
+      }
+    );
+
+    const data = await response.json();
+    console.log("AI Recommendation:", data);
+
+    if (data.error) {
+      invalidInputSwal("AI Model error: " + data.error);
+      return;
+    }
+
+    const recommended = data.recommendedAlgorithm;
+
+    // 🔥 Update dropdown visually
+    props.setSelectedAlgo({ label: recommended, value: recommended });
+
+    // 🔥 Update internal recommendation state
+    setRecommendation(recommended);
+
+    // 🔥 Fetch analysis for the recommended algorithm so we can show real metrics
+    try {
+      const processesForAnalyze = arrivalArr.map((at, i) => ({
+        arrivalTime: at,
+        burstTime: burstArr[i],
+        priority: priorities[i] || 0,
+      }));
+
+      const analyzeResp = await fetch(
+        `http://localhost:5000/analyze?algorithm=${recommended}&quantum=${tq}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(processesForAnalyze),
+        }
+      );
+
+      if (!analyzeResp.ok) {
+        console.error("Analyze failed for recommended algo:", analyzeResp.status);
+        invalidInputSwal("Failed to fetch analysis for recommended algorithm");
+        return;
+      }
+
+      const analyzeData = await analyzeResp.json();
+      console.log("Analyze data for recommended:", analyzeData);
+
+      setResultsList([
+        {
+          algo: recommended,
+          avgWaitingTime:
+            analyzeData.avgWaitingTime ?? analyzeData.avgWT ?? NaN,
+          avgTurnAroundTime:
+            analyzeData.avgTurnAroundTime ?? analyzeData.avgTAT ?? NaN,
+        },
+      ]);
+    } catch (err) {
+      console.error("Failed to get analysis for recommended algo:", err);
+      invalidInputSwal("AI model recommended but analysis failed");
+    }
+
+  } catch (err) {
+    console.error("AI Recommend error:", err);
+    invalidInputSwal("AI model failed");
+  }
+};
 
   return (
     <StyledInput>
@@ -302,58 +364,54 @@ const Input = (props: InputProps) => {
             setSelectedAlgo={setSelectedAlgo}
           />
         </fieldset>
+
         <fieldset>
-          <label htmlFor="arrival-time">Arrival Times</label>
+          <label>Arrival Times</label>
           <input
             onChange={(e) => setArrivalTime(e.target.value)}
-            type="text"
-            id="arrival-time"
-            placeholder="e.g. 0 2 4 6 8"
+            placeholder="e.g. 0 2 4 6"
             ref={arrivalTimeRef}
           />
         </fieldset>
+
         <fieldset>
-          <label htmlFor="burst-time">Burst Times</label>
+          <label>Burst Times</label>
           <input
             onChange={(e) => setBurstTime(e.target.value)}
-            type="text"
-            id="burst-time"
-            placeholder="e.g. 2 4 6 8 10"
+            placeholder="e.g. 2 4 6 8"
             ref={burstTimeRef}
           />
         </fieldset>
-        {selectedAlgo.value === 'RR' && (
+
+        {selectedAlgo.value === "RR" && (
           <fieldset>
-            <label htmlFor="time-quantum">Time Quantum</label>
+            <label>Time Quantum</label>
             <input
               value={timeQuantum}
               onChange={(e) => setTimeQuantum(e.target.value)}
               type="number"
-              id="time-quantum"
-              placeholder="e.g. 3"
               min="1"
-              step="1"
-            />
-          </fieldset>
-        )}
-        {(selectedAlgo.value === 'NPP' || selectedAlgo.value === 'PP') && (
-          <fieldset>
-            <label htmlFor="priorities">Priorities</label>
-            <input
-              value={priorities}
-              onChange={(e) => setPriorities(e.target.value)}
-              type="text"
-              id="priorities"
-              placeholder="Lower # = higher priority"
+              placeholder="e.g. 3"
             />
           </fieldset>
         )}
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+        {(selectedAlgo.value === "NPP" ||
+          selectedAlgo.value === "PP") && (
+          <fieldset>
+            <label>Priorities</label>
+            <input
+              value={priorities}
+              onChange={(e) => setPriorities(e.target.value)}
+              placeholder="Lower number = higher priority"
+            />
+          </fieldset>
+        )}
+
+        <div style={{ display: "flex", gap: "10px", marginTop: "1rem" }}>
           <Button type="submit">Solve</Button>
-          <Button type="button" onClick={handleAnalyze}>
-            Analyze
-          </Button>
+          <Button type="button" onClick={handleAnalyze}>Analyze</Button>
+          <Button type="button" onClick={handleAIRecommend}>AI Recommend</Button>
         </div>
       </Form>
 
@@ -370,19 +428,11 @@ const Input = (props: InputProps) => {
             {resultsList.map((res, idx) => (
               <tr
                 key={idx}
-                className={res.algo === recommendation ? 'best' : ''}
+                className={res.algo === recommendation ? "best" : ""}
               >
                 <td>{res.algo}</td>
-                <td>
-                  {isNaN(res.avgWaitingTime)
-                    ? 'NaN'
-                    : res.avgWaitingTime.toFixed(2)}
-                </td>
-                <td>
-                  {isNaN(res.avgTurnAroundTime)
-                    ? 'NaN'
-                    : res.avgTurnAroundTime.toFixed(2)}
-                </td>
+                <td>{isNaN(res.avgWaitingTime) ? "NaN" : res.avgWaitingTime.toFixed(2)}</td>
+                <td>{isNaN(res.avgTurnAroundTime) ? "NaN" : res.avgTurnAroundTime.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
