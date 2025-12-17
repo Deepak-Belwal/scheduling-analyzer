@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scheduling Analyzer</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #0f1115;
+      color: #e3e3e3;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      color: #00bcd4;
+      margin-bottom: 1.5rem;
+    }
+
+    input, select, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+    }
+
+    button {
+      background-color: #00bcd4;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover { background-color: #0097a7; }
+
+    table {
+      margin: 1rem auto;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid #333;
+    }
+
+    th { background-color: #00bcd4; color: #121212; }
+
+    input[type="number"] { width: 80px; }
+
+    .log {
+      margin-top: 2rem;
+      width: 90%;
+      max-width: 750px;
+      margin-inline: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .entry {
+      background: #1a1d22;
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      text-align: left;
+    }
+
+    .entry h3 {
+      margin: 0 0 0.6rem 0;
+      color: #00e5ff;
+      font-size: 1.25rem;
+    }
+
+    .order {
+      margin-bottom: 0.5rem;
+    }
+
+    .order-label {
+      font-size: 0.95rem;
+      color: #bbb;
+      margin-right: 0.5rem;
+    }
+
+    .order span {
+      display: inline-block;
+      font-size: 1.3rem;
+      font-weight: 600;
+      background: #00bcd4;
+      color: #121212;
+      border-radius: 10px;
+      padding: 4px 12px;
+      margin: 3px 4px;
+    }
+
+    .stats {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      color: #ccc;
+    }
+
+    .gantt {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+      border: 1px solid #00bcd4;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #101417;
+    }
+
+    .gantt div {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      font-weight: bold;
+      background-color: #00bcd4;
+      color: #121212;
+      border-right: 1px solid #121212;
+      font-size: 1.2rem;
+    }
+
+    .gantt div:last-child {
+      border-right: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scheduling Analyzer</h1>
+
+  <div>
+    <select id="algorithm">
+      <option value="fcfs">FCFS</option>
+      <option value="sjf">SJF</option>
+      <option value="rr">Round Robin</option>
+    </select>
+    <input type="number" id="quantum" placeholder="Quantum (RR only)" />
+  </div>
+
+  <table id="processTable">
+    <thead>
+      <tr>
+        <th>PID</th>
+        <th>Burst Time</th>
+        <th>Arrival Time</th>
+      </tr>
+    </thead>
+    <tbody id="processBody">
+      <tr>
+        <td>P1</td><td><input type="number" value="4"></td><td><input type="number" value="0"></td>
+      </tr>
+      <tr>
+        <td>P2</td><td><input type="number" value="2"></td><td><input type="number" value="1"></td>
+      </tr>
+      <tr>
+        <td>P3</td><td><input type="number" value="1"></td><td><input type="number" value="2"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button onclick="addRow()">Add Process</button>
+  <button onclick="analyze()">Analyze</button>
+
+  <div class="log" id="log"></div>
+
+  <script>
+    function addRow() {
+      const tbody = document.getElementById("processBody");
+      const rowCount = tbody.rows.length + 1;
+      const row = tbody.insertRow();
+      row.innerHTML = `<td>P${rowCount}</td>
+                       <td><input type='number'></td>
+                       <td><input type='number'></td>`;
+    }
+
+    async function analyze() {
+      const algorithm = document.getElementById("algorithm").value;
+      const quantum = document.getElementById("quantum").value;
+
+      const processes = [];
+      const rows = document.getElementById("processBody").rows;
+      for (let i = 0; i < rows.length; i++) {
+        const pid = rows[i].cells[0].textContent;
+        const bt = parseInt(rows[i].cells[1].children[0].value);
+        const at = parseInt(rows[i].cells[2].children[0].value);
+        if (!isNaN(bt) && !isNaN(at)) {
+          processes.push({ pid: pid, burstTime: bt, arrivalTime: at });
+        }
+      }
+
+      const url =
+        algorithm === "rr"
+          ? `http://localhost:8080/api/analyze?algorithm=${algorithm}&quantum=${quantum}`
+          : `http://localhost:8080/api/analyze?algorithm=${algorithm}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(processes),
+      });
+
+      const result = await response.json();
+      displayResult(result, algorithm);
+    }
+
+    function displayResult(result, algorithm) {
+      const log = document.getElementById("log");
+      const now = new Date().toLocaleString();
+
+      const entry = document.createElement("div");
+      entry.classList.add("entry");
+
+      const heading = document.createElement("h3");
+      heading.textContent = `${algorithm.toUpperCase()} (${now})`;
+      entry.appendChild(heading);
+
+      const orderDiv = document.createElement("div");
+      orderDiv.classList.add("order");
+
+      const label = document.createElement("span");
+      label.classList.add("order-label");
+      label.textContent = "Order:";
+      orderDiv.appendChild(label);
+
+      result.order.forEach(pid => {
+        const span = document.createElement("span");
+        span.textContent = pid;
+        orderDiv.appendChild(span);
+      });
+      entry.appendChild(orderDiv);
+
+      const stats = document.createElement("div");
+      stats.classList.add("stats");
+      stats.innerHTML = `⏱ Avg Waiting Time: <b>${result.avgWaitingTime?.toFixed(2) ?? "N/A"}</b> | Avg Turnaround Time: <b>${result.avgTurnaroundTime?.toFixed(2) ?? "N/A"}</b>`;
+      entry.appendChild(stats);
+
+      if (result.ganttChart) {
+        const gantt = document.createElement("div");
+        gantt.classList.add("gantt");
+        result.ganttChart.forEach(pid => {
+          const block = document.createElement("div");
+          block.textContent = pid;
+          gantt.appendChild(block);
+        });
+        entry.appendChild(gantt);
+      }
+
+      log.prepend(entry);
+    }
+  </script>
+</body>
+</html>

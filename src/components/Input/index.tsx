@@ -264,7 +264,7 @@ const Input = (props: InputProps) => {
   };
 
   const handleAIRecommend = async () => {
-  console.log("🤖 AI Recommend clicked");
+  console.log("AI Recommend clicked");
 
   const arrivalArr = arrivalTime.trim().split(/\s+/).map(Number);
   const burstArr = burstTime.trim().split(/\s+/).map(Number);
@@ -301,13 +301,10 @@ const Input = (props: InputProps) => {
 
     const recommended = data.recommendedAlgorithm;
 
-    // 🔥 Update dropdown visually
     props.setSelectedAlgo({ label: recommended, value: recommended });
 
-    // 🔥 Update internal recommendation state
     setRecommendation(recommended);
 
-    // 🔥 Fetch analysis for the recommended algorithm so we can show real metrics
     try {
       const processesForAnalyze = arrivalArr.map((at, i) => ({
         arrivalTime: at,
